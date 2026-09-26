@@ -1,7 +1,16 @@
 const { app, BrowserWindow, ipcMain } = require('electron/main')
 const path = require('node:path')
+const {
+  updateElectronApp,
+  UpdateSourceType
+} = require('update-electron-app')
 
-
+updateElectronApp({
+  updateSource: {
+    type: UpdateSourceType.ElectronPublicUpdateService,
+    repo: 'shiyuchenqirui-hash/my-electron-app'
+  }
+})
 
 const createWindow = () => {
   const win = new BrowserWindow({
