@@ -1,6 +1,14 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron/main')
 const path = require('node:path')
 
+function sendCounterUpdate (mainWindow, value) {
+  mainWindow.webContents.send('update-counter', value)
+}
+
+function handleCounterValue (_event, value) {
+  console.log(value) // will print value to Node console
+}
+
 function createWindow () {
   const mainWindow = new BrowserWindow({
     webPreferences: {
@@ -9,33 +17,38 @@ function createWindow () {
   })
 
   const menu = Menu.buildFromTemplate([
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
     {
-      label: app.name,
+      label: 'Counter',
       submenu: [
         {
-          click: () => mainWindow.webContents.send('update-counter', 1),
-          label: 'Increment'
+          label: 'Increment',
+          click: () => sendCounterUpdate(mainWindow, 1)
         },
         {
-          click: () => mainWindow.webContents.send('update-counter', -1),
-          label: 'Decrement'
+          label: 'Decrement',
+          click: () => sendCounterUpdate(mainWindow, -1)
         }
       ]
-    }
-
+    },
+    { role: 'windowMenu' }
   ])
 
   Menu.setApplicationMenu(menu)
+
   mainWindow.loadFile('index.html')
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  if (!process.env.PLAYWRIGHT_TEST) {
+    // Open the DevTools during normal development, but not in automated tests.
+    mainWindow.webContents.openDevTools()
+  }
 }
 
 app.whenReady().then(() => {
-  ipcMain.on('counter-value', (_event, value) => {
-    console.log(value) // will print value to Node console
-  })
+  ipcMain.on('counter-value', handleCounterValue)
   createWindow()
 
   app.on('activate', function () {
