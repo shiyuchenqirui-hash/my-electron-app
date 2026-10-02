@@ -1,6 +1,8 @@
-const func = async () => {
-  const response = await window.versions.ping()
-  console.log(response) // 打印 'pong'
-}
+const counter = document.getElementById('counter')
 
-func()
+window.electronAPI.onUpdateCounter((value) => {
+  const oldValue = Number(counter.innerText)
+  const newValue = oldValue + value
+  counter.innerText = newValue.toString()
+  window.electronAPI.counterValue(newValue)
+})

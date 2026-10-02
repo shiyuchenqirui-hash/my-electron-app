@@ -1,31 +1,48 @@
-const { app, BrowserWindow, ipcMain } = require('electron/main')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron/main')
 const path = require('node:path')
-const {
-  updateElectronApp,
-  UpdateSourceType
-} = require('update-electron-app')
 
-updateElectronApp({
-  updateSource: {
-    type: UpdateSourceType.ElectronPublicUpdateService,
-    repo: 'shiyuchenqirui-hash/my-electron-app'
-  }
-})
-
-const createWindow = () => {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    height: 600,
+function createWindow () {
+  const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
   })
 
-  win.loadFile('index.html')
+  const menu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        {
+          click: () => mainWindow.webContents.send('update-counter', 1),
+          label: 'Increment'
+        },
+        {
+          click: () => mainWindow.webContents.send('update-counter', -1),
+          label: 'Decrement'
+        }
+      ]
+    }
+
+  ])
+
+  Menu.setApplicationMenu(menu)
+  mainWindow.loadFile('index.html')
+
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools()
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle('ping', () => 'pong')
+  ipcMain.on('counter-value', (_event, value) => {
+    console.log(value) // will print value to Node console
+  })
   createWindow()
+
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit()
 })
