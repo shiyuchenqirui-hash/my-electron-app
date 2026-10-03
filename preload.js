@@ -10,7 +10,12 @@ function sendCounterValue (value) {
   ipcRenderer.send('counter-value', value)
 }
 
+function closeSettings () {
+  ipcRenderer.send('settings:close')
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateCounter,
-  counterValue: sendCounterValue
+  counterValue: sendCounterValue,
+  closeSettings
 })
