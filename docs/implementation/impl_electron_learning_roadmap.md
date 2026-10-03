@@ -4,13 +4,14 @@
 > **状态**: 草稿
 > **作者**: shiyu.chen
 > **创建日期**: 2026-09-29
-> **最后更新**: 2026-09-29
+> **最后更新**: 2026-10-04
 
 ## TL;DR
 
 - 本文将 Electron 官网目录重组为核心原理、近期实践、按需能力和暂缓内容，避免按左侧菜单线性阅读。
-- 当前已经完成 Forge 打包发布，并阅读或讨论了进程模型、IPC、安全、性能、菜单、MessagePort 和深链等主题。
-- 当前正在阅读自动化测试，项目后续以 Playwright Test 为主要实践路线；WebDriver 先掌握概念，不同时维护两套测试框架。
+- 当前已经完成 Forge 打包发布、Playwright Smoke Test、Main/Preload/Renderer 双向 IPC、窗口生命周期和多 Renderer 调试实践。
+- 下一阶段从 `webContents` 开始，随后补齐导航与外链安全、`session`、异常恢复和测试诊断能力。
+- 项目继续以 Playwright Test 为主要自动化路线；WebDriver 保持概念层理解，不同时维护两套测试框架。
 - 文中的“已阅读”“已实践”和“待验证”含义不同，不以看完页面代替实际掌握。
 
 ## 目录
@@ -45,16 +46,20 @@
 | 入门教程 | 已实践 | 已完成基础窗口、Preload、Renderer 和 Forge 项目结构 |
 | Forge 打包与发布 | 已实践 | 已执行 `package`、`make`、`publish`，并发布 GitHub Release |
 | 代码签名与自动更新 | 待验证 | 已接入 `update-electron-app`；当前缺少正式 macOS 签名，真实升级链路尚未验证 |
-| 进程模型 | 已阅读 | 已区分 Main、Renderer、Preload、Utility Process 的职责 |
-| Context Isolation 与 Sandbox | 已阅读 | 已理解隔离世界、权限边界和 Preload 的作用 |
-| IPC | 已阅读并局部实践 | 已讨论 `send/on`、`invoke/handle`、`webContents.send`、二进制数据与错误序列化 |
+| 进程模型 | 已实践 | 已区分 Main、Renderer、Preload、Utility Process，并分别连接调试目标观察代码执行 |
+| Context Isolation 与 Sandbox | 已阅读并局部实践 | 已理解隔离世界、权限边界和 Preload 的作用，并通过 `contextBridge` 暴露最小 API |
+| IPC | 已实践 | 已完成 Main → Preload → Renderer → Preload → Main 双向链路及跨边界断点调试 |
 | MessagePort | 已阅读 | 已理解 Renderer 间直连和响应流场景，暂未做完整示例 |
-| 菜单 | 已实践 | 已使用 Electron Fiddle/Gist 练习菜单与 IPC；项目内完整交互仍可继续验证 |
+| 菜单 | 已实践 | 已使用 Electron Fiddle/Gist 练习，并在项目中实现计数器和 Settings 菜单入口 |
+| `app` 生命周期 | 已实践 | 已学习 `ready`、`activate`、`window-all-closed` 及主动退出事件顺序 |
+| `BrowserWindow` | 已实践 | 已实现主窗口、父子关系、模态 Settings 窗口及 `close`/`closed` 生命周期观察 |
+| 调试 | 已实践 | 已使用 Node Inspector、Electron DevTools 和 VS Code 调试 Main、Preload 与多个 Renderer target |
 | 性能 | 已实践但未完成分析 | 已生成 CPU/Heap Profile；尚未完成火焰图和热点判断 |
-| 安全 | 已阅读 | 已重点讨论远程内容、`contextBridge`、WebView/WebContentsView 和 IPC 暴露边界 |
+| 安全 | 已阅读并局部实践 | 已讨论远程内容、`contextBridge`、WebView/WebContentsView 和 IPC 暴露边界，并校验 Settings IPC sender |
 | 深度链接 | 已阅读并分析项目 | 已阅读官方方案，并分析 `migoo-pc` 的注册、冷启动、热启动和路由校验链路 |
 | 多线程 | 已浏览 | 已明确它属于 CPU 密集任务场景，不作为当前主线 |
-| 自动化测试 | 阅读中 | 当前阅读官网 Playwright 小节，尚未在本项目安装测试依赖 |
+| ASAR 与 Fuses | 已阅读 | 已理解 ASAR、完整性校验、`OnlyLoadAppFromAsar` 和 Fuses 的职责边界 |
+| 自动化测试 | 已实践 | 已安装 Playwright Test，并覆盖应用启动、Main 状态读取、模态窗口关系和关闭操作 |
 
 ## 3. 核心学习路线
 
@@ -64,9 +69,9 @@
 
 | 主题 | 学习重点 | 状态 |
 |------|----------|------|
-| [流程模型](https://www.electronjs.org/zh/docs/latest/tutorial/process-model) | Main、Renderer、Preload、Utility Process | 已阅读 |
-| [上下文隔离](https://www.electronjs.org/zh/docs/latest/tutorial/context-isolation) | 隔离世界、`contextBridge`、最小 API 暴露 | 已阅读 |
-| [进程间通信](https://www.electronjs.org/zh/docs/latest/tutorial/ipc) | 单向、双向、请求响应和 sender 校验 | 已阅读并局部实践 |
+| [流程模型](https://www.electronjs.org/zh/docs/latest/tutorial/process-model) | Main、Renderer、Preload、Utility Process | 已实践 |
+| [上下文隔离](https://www.electronjs.org/zh/docs/latest/tutorial/context-isolation) | 隔离世界、`contextBridge`、最小 API 暴露 | 已阅读并局部实践 |
+| [进程间通信](https://www.electronjs.org/zh/docs/latest/tutorial/ipc) | 单向、双向、请求响应和 sender 校验 | 已实践 |
 | [进程沙盒化](https://www.electronjs.org/zh/docs/latest/tutorial/sandbox) | Renderer 权限、Node Integration 与 Sandbox | 已阅读 |
 | [安全指南](https://www.electronjs.org/zh/docs/latest/tutorial/security) | 远程内容、导航、新窗口、外链、IPC 校验 | 已阅读，后续回顾 |
 | [性能指南](https://www.electronjs.org/zh/docs/latest/tutorial/performance) | Main/Renderer 阻塞、启动成本和性能分析 | 已阅读并局部实践 |
@@ -82,11 +87,12 @@
 
 | 主题 | 学习重点 | 状态 |
 |------|----------|------|
-| `app` 生命周期 | `ready`、`activate`、`window-all-closed`、退出流程 | 待读 |
-| `BrowserWindow` | 窗口创建、显示、销毁和 `webPreferences` | 待读 |
+| `app` 生命周期 | `ready`、`activate`、`window-all-closed`、退出流程 | 已实践 |
+| `BrowserWindow` | 窗口创建、显示、销毁和 `webPreferences` | 已实践 |
 | `webContents` | 页面生命周期、导航、IPC、DevTools 和崩溃处理 | 待读 |
 | `session` | 权限、Cookie、网络请求和下载管理 | 待读 |
 | 导航与新窗口 | `will-navigate`、`setWindowOpenHandler`、外链校验 | 待读 |
+| Renderer 稳定性 | `render-process-gone`、无响应和加载失败恢复 | 待读 |
 
 ### 3.3 按需深入
 
@@ -116,16 +122,17 @@
 
 ## 5. 开发、分发与调试
 
-### 5.1 近期阅读
+### 5.1 当前进展
 
 | 主题 | 目标 | 状态 |
 |------|------|------|
-| 调试主进程 | 使用 Inspector/DevTools 定位 Main 逻辑 | 待读 |
-| 使用 VS Code 调试 | 分别启动或附加 Main 与 Renderer | 待读 |
-| 调试应用 | 区分 Chromium、Node 和 Electron 调试目标 | 待读 |
-| ASAR Archives | 理解打包结构、读取语义和 unpack 边界 | 待读 |
-| ASAR Integrity | 理解打包产物完整性检查 | 待读 |
-| Electron Fuses | 理解构建阶段关闭高风险能力 | 待读 |
+| 调试主进程 | 使用 Inspector/DevTools 定位 Main 逻辑 | 已实践 |
+| 使用 VS Code 调试 | 分别启动或附加 Main 与 Renderer | 已实践 |
+| 调试应用 | 区分 Chromium、Node 和 Electron 调试目标 | 已实践 |
+| 多窗口调试 | 按页面 URL 附加主窗口与 Settings Renderer | 已实践 |
+| ASAR Archives | 理解打包结构、读取语义和 unpack 边界 | 已阅读，待观察产物 |
+| ASAR Integrity | 理解打包产物完整性检查 | 已阅读 |
+| Electron Fuses | 理解构建阶段关闭高风险能力 | 已阅读 |
 
 ### 5.2 当前可暂缓
 
@@ -179,26 +186,28 @@ WebDriver、Selenium、WebdriverIO 和 Playwright 不是四个平级概念。
 
 ### 6.4 Playwright 学习里程碑
 
-- [ ] 完成 Electron 官网 Playwright 小节
-- [ ] 理解 `_electron.launch()`、`ElectronApplication` 和 `firstWindow()`
-- [ ] 为本项目安装 `@playwright/test`
-- [ ] 编写“应用可以启动并显示主窗口”的 Smoke Test
-- [ ] 使用 Locator 操作 Renderer 页面并断言结果
-- [ ] 使用 `electronApp.evaluate()` 读取 Main 状态
+- [x] 完成 Electron 官网 Playwright 小节
+- [x] 理解 `_electron.launch()`、`ElectronApplication` 和 `firstWindow()`
+- [x] 为本项目安装 `@playwright/test`
+- [x] 编写“应用可以启动并显示主窗口”的 Smoke Test
+- [x] 使用 Locator 操作 Renderer 页面并断言结果
+- [x] 使用 `electronApp.evaluate()` 读取 Main 状态
+- [x] 验证两个 `BrowserWindow` 的独立 `webContents`、父子关系和模态状态
 - [ ] 生成并查看失败截图或 Trace
 - [ ] 再单独讨论适合本项目的测试范围，不追求一次覆盖所有能力
 
 ## 7. 下一步顺序
 
-建议从当前自动化测试章节继续，按以下顺序推进：
+后续按以下顺序推进：
 
-1. 完成 Playwright 小节，只理解 WebDriver/WebdriverIO 的定位。
-2. 阅读“调试主进程”“调试应用”“使用 VS Code 调试”。
-3. 阅读 ASAR Archives，结合本项目的 Forge 打包产物观察 `app.asar`。
-4. 阅读 ASAR Integrity 和 Electron Fuses，理解它们与代码签名的不同职责。
-5. 补齐 `session`、导航和新窗口控制。
-6. 阅读 Web 嵌入，比较 `WebContentsView`、`<webview>` 和 iframe。
-7. 再根据实际需求选择通知、拖放、托盘或 Utility Process 等示例。
+1. 学习 `webContents` 的页面加载事件、DevTools 控制和 Renderer 崩溃处理。
+2. 实践 `will-navigate`、`setWindowOpenHandler`、`shell.openExternal()` 和 URL 白名单。
+3. 学习 `session` 的 Cookie、缓存、代理、权限、请求拦截和下载管理。
+4. 实践 `render-process-gone`、加载失败和无响应场景的诊断与恢复。
+5. 补充 Playwright 失败截图、Trace Viewer、多窗口测试和诊断信息收集。
+6. 完成 CPU/Heap Profile 分析，并比较基础启动与附加模块后的性能差异。
+7. 观察 Forge 产物中的 `app.asar`，再根据分发需求补齐签名、公证和真实自动更新验证。
+8. 根据实际需求选择 Web 嵌入、通知、拖放、托盘、MessagePort 或 Utility Process 等能力。
 
 ## 8. 维护方式与参考资料
 

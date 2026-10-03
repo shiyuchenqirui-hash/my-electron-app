@@ -3,17 +3,26 @@
   "compounds": [
     {
       "name": "Main + renderer",
-      "configurations": ["Main", "Renderer"],
+      "configurations": ["Main", "Renderer - Main Window"],
       "stopAll": true
     }
   ],
   "configurations": [
     {
-      "name": "Renderer",
+      "name": "Renderer - Main Window",
       "port": 9222,
       "request": "attach",
       "type": "chrome",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}",
+      "urlFilter": "file://*/index.html"
+    },
+    {
+      "name": "Renderer - Settings Window",
+      "port": 9222,
+      "request": "attach",
+      "type": "chrome",
+      "webRoot": "${workspaceFolder}",
+      "urlFilter": "file://*/settings.html"
     },
     {
       "name": "Main",
