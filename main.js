@@ -1,7 +1,54 @@
-const { app, BrowserWindow, Menu, MenuItem, ipcMain } = require('electron/main')
+const { app, BrowserWindow, Menu, MenuItem, ipcMain, shell } = require('electron/main')
 const path = require('node:path')
+const { pathToFileURL } = require('node:url')
+
+const allowedSettingsPages = new Set([
+  pathToFileURL(path.join(__dirname, 'settings.html')).href,
+  pathToFileURL(path.join(__dirname, 'navigation-target.html')).href
+])
 
 let settingsWindow = null
+
+function getSettingsNavigationAction (url) {
+  let target
+
+  try {
+    target = new URL(url)
+  } catch {
+    return 'deny'
+  }
+
+  if (target.username || target.password) return 'deny'
+
+  if (target.origin === 'https://www.electronjs.org') return 'external'
+
+  // Query strings and hashes do not change which local file is allowed.
+  target.search = ''
+  target.hash = ''
+
+  return allowedSettingsPages.has(target.href) ? 'allow' : 'deny'
+}
+
+function handleSettingsNavigation (event) {
+  const action = getSettingsNavigationAction(event.url)
+
+  if (action === 'allow') {
+    console.log('[settings] navigation-allowed', { url: event.url })
+    return
+  }
+
+  event.preventDefault()
+
+  if (action === 'external' && event.isMainFrame) {
+    console.log('[settings] external-open-request', { url: event.url })
+    shell.openExternal(event.url).catch((error) => {
+      console.error('[settings] external-open-failed', error)
+    })
+    return
+  }
+
+  console.log('[settings] navigation-blocked', { url: event.url })
+}
 
 function sendCounterUpdate (mainWindow, value) {
   mainWindow.webContents.send('update-counter', value)
@@ -45,6 +92,103 @@ function createSettingsWindow (mainWindow) {
   }
 
   console.log('[windows] created', windowIds)
+
+  settingsWindow.webContents.on('did-start-loading', () => {
+    console.log('[settings] did-start-loading')
+  })
+
+  settingsWindow.webContents.on('dom-ready', () => {
+    console.log('[settings] dom-ready')
+  })
+
+  settingsWindow.webContents.on('did-finish-load', () => {
+    console.log('[settings] did-finish-load')
+  })
+
+  settingsWindow.webContents.on(
+    'did-fail-load',
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      console.log('[settings] did-fail-load', {
+        errorCode,
+        errorDescription,
+        validatedURL,
+        isMainFrame
+      })
+    }
+  )
+
+  settingsWindow.webContents.on('did-start-navigation', (details) => {
+    console.log('[settings] did-start-navigation', {
+      url: details.url,
+      isSameDocument: details.isSameDocument,
+      isMainFrame: details.isMainFrame
+    })
+  })
+
+  settingsWindow.webContents.on('will-frame-navigate', (details) => {
+    console.log('[settings] will-frame-navigate', {
+      url: details.url,
+      isMainFrame: details.isMainFrame
+    })
+
+    // Main-frame requests are handled by will-navigate below.
+    if (!details.isMainFrame) handleSettingsNavigation(details)
+  })
+
+  settingsWindow.webContents.on('will-navigate', (details) => {
+    console.log('[settings] will-navigate', {
+      url: details.url,
+      isMainFrame: details.isMainFrame
+    })
+
+    handleSettingsNavigation(details)
+  })
+
+  settingsWindow.webContents.on('will-redirect', (event) => {
+    if (getSettingsNavigationAction(event.url) !== 'allow') {
+      event.preventDefault()
+      console.log('[settings] redirect-blocked', { url: event.url })
+    }
+  })
+
+  settingsWindow.webContents.on(
+    'did-frame-navigate',
+    (_event, url, httpResponseCode, httpStatusText, isMainFrame) => {
+      console.log('[settings] did-frame-navigate', {
+        url,
+        httpResponseCode,
+        httpStatusText,
+        isMainFrame
+      })
+    }
+  )
+
+  settingsWindow.webContents.on(
+    'did-navigate',
+    (_event, url, httpResponseCode, httpStatusText) => {
+      console.log('[settings] did-navigate', {
+        url,
+        httpResponseCode,
+        httpStatusText
+      })
+    }
+  )
+
+  settingsWindow.webContents.on(
+    'did-navigate-in-page',
+    (_event, url, isMainFrame) => {
+      console.log('[settings] did-navigate-in-page', {
+        url,
+        isMainFrame
+      })
+    }
+  )
+
+  settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('[settings] window-open-request', { url, action: 'deny' })
+
+    return { action: 'deny' }
+  })
 
   settingsWindow.once('ready-to-show', () => {
     console.log('[settings] ready-to-show')
