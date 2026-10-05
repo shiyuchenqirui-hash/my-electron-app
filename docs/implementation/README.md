@@ -1,0 +1,38 @@
+# Electron 实验索引
+
+> **类型**: 实现记录
+> **状态**: 已实现
+> **作者**: shiyu.chen
+> **创建日期**: 2026-10-04
+> **最后更新**: 2026-10-05
+
+## TL;DR
+
+- 本索引连接可运行代码与问题导向的实验记录，阅读顺序另见 [学习路线](impl_electron_learning_roadmap.md)。
+- “历史手测”来自学习时的操作、日志与截图；“本次复测”只涵盖下面明确列出的检查。
+- 记录于 2026-10-04 补齐；本轮整理不代表当天首次完成所有实验，也不代表所有实验都有自动化覆盖。
+
+## 实验入口
+
+先按 [项目 README](../../README.md) 启动应用，再选择一个问题。
+
+| 研究问题 | 触发入口 | 证据与边界 |
+| --- | --- | --- |
+| [一次计数消息如何经过三个执行环境？](impl_ipc_counter.md) | Counter → Increment / Decrement | 历史断点手测；现有测试只检查启动和 API 存在，不断言菜单计数往返 |
+| [Settings 如何创建、显示和关闭？](impl_modal_lifecycle.md) | Window → Open Settings → Close | 历史手测；现有测试覆盖父子关系、modal、独立 webContents 和关闭 |
+| [页面加载失败与不同导航如何区分？](impl_navigation_loading.md) | Settings 内六个链接；失败场景见文档 | 历史日志与当前代码核对；未纳入自动化测试 |
+| [Renderer 终止后哪些对象和状态仍在？](impl_renderer_recovery.md) | VS Code Main Debug Console | 历史控制台实测；临时探针未写入业务代码，无自动恢复实现 |
+
+## 验证基准
+
+本文整理基于本地 `8e6f271eeb82b42bd7807db3ff6fb8cb0c1ecbcc` 之后的工作区。该旧 SHA 不包含导航相关 `main.js`、`settings.html` 改动和新增的 `navigation-target.html`；复现新增导航实验应使用包含这些文件的后续版本。
+
+当前已安装版本：Electron 44.4.5、Forge 7.11.2、Playwright Test 1.63.0；复测使用 macOS 与 Node.js 22.23.2。首次在受限工具环境执行 `npm test` 时，Electron 未能启动，随后出现清理阶段的 `electronApp.close()` 错误；该次没有验证业务断言。
+
+2026-10-04 在允许桌面进程启动的环境复测 `npm test`：`2 passed (4.1s)`。通过的是上述两个现有用例，不扩展为导航、崩溃、签名或自动更新已验证。新克隆安装和 Forge 打包没有在本轮重新执行。
+
+## 如何维护
+
+每次完成一个问题，更新对应记录中的环境、操作、证据和边界。学习路线只维护主题进度，不重复粘贴实验结果。已提交的历史结论可引用具体 commit 文件链接；当前操作说明使用相对文件链接。
+
+临时日志和性能原始文件按 `.gitignore` 留在本地；公开文档只摘录必要且脱敏的证据。方法复盘与私人学习安排不作为此处实验完成的证据。

@@ -10,7 +10,7 @@
 
 - 本文将 Electron 官网目录重组为核心原理、近期实践、按需能力和暂缓内容，避免按左侧菜单线性阅读。
 - 当前已经完成 Forge 打包发布、Playwright Smoke Test、Main/Preload/Renderer 双向 IPC、窗口生命周期和多 Renderer 调试实践。
-- 下一阶段从 `webContents` 开始，随后补齐导航与外链安全、`session`、异常恢复和测试诊断能力。
+- `webContents` 加载、导航及 Renderer 终止后的手动重载已有局部实践，具体入口与证据见 [实验索引](README.md)。下一阶段学习 `session`，再补异常恢复策略和测试诊断。
 - 项目继续以 Playwright Test 为主要自动化路线；WebDriver 保持概念层理解，不同时维护两套测试框架。
 - 文中的“已阅读”“已实践”和“待验证”含义不同，不以看完页面代替实际掌握。
 
@@ -45,7 +45,7 @@
 |------|----------|------------------|
 | 入门教程 | 已实践 | 已完成基础窗口、Preload、Renderer 和 Forge 项目结构 |
 | Forge 打包与发布 | 已实践 | 已执行 `package`、`make`、`publish`，并发布 GitHub Release |
-| 代码签名与自动更新 | 待验证 | 已接入 `update-electron-app`；当前缺少正式 macOS 签名，真实升级链路尚未验证 |
+| 代码签名与自动更新 | 待验证 | 历史尝试过接入；当前依赖仍包含 `update-electron-app`，但 `main.js` 没有初始化调用，未配置正式 macOS 签名，真实升级链路尚未验证 |
 | 进程模型 | 已实践 | 已区分 Main、Renderer、Preload、Utility Process，并分别连接调试目标观察代码执行 |
 | Context Isolation 与 Sandbox | 已阅读并局部实践 | 已理解隔离世界、权限边界和 Preload 的作用，并通过 `contextBridge` 暴露最小 API |
 | IPC | 已实践 | 已完成 Main → Preload → Renderer → Preload → Main 双向链路及跨边界断点调试 |
@@ -56,10 +56,12 @@
 | 调试 | 已实践 | 已使用 Node Inspector、Electron DevTools 和 VS Code 调试 Main、Preload 与多个 Renderer target |
 | 性能 | 已实践但未完成分析 | 已生成 CPU/Heap Profile；尚未完成火焰图和热点判断 |
 | 安全 | 已阅读并局部实践 | 已讨论远程内容、`contextBridge`、WebView/WebContentsView 和 IPC 暴露边界，并校验 Settings IPC sender |
-| 深度链接 | 已阅读并分析项目 | 已阅读官方方案，并分析 `migoo-pc` 的注册、冷启动、热启动和路由校验链路 |
+| 深度链接 | 已阅读 | 已阅读注册、冷启动、热启动和路由校验方案；本仓库暂无独立深链示例 |
 | 多线程 | 已浏览 | 已明确它属于 CPU 密集任务场景，不作为当前主线 |
 | ASAR 与 Fuses | 已阅读 | 已理解 ASAR、完整性校验、`OnlyLoadAppFromAsar` 和 Fuses 的职责边界 |
 | 自动化测试 | 已实践 | 已安装 Playwright Test，并覆盖应用启动、Main 状态读取、模态窗口关系和关闭操作 |
+| 页面加载与导航 | 已实践并局部待验证 | 已观察正常加载、文件不存在、hash、跨文档及拒绝新窗口；外链、子框架与重定向的验证范围见 [记录](impl_navigation_loading.md) |
+| Renderer 终止与重载 | 已手动实践 | 已观察终止后对象存活与重载后变量丢失；没有自动恢复实现，见 [记录](impl_renderer_recovery.md) |
 
 ## 3. 核心学习路线
 
@@ -89,10 +91,10 @@
 |------|----------|------|
 | `app` 生命周期 | `ready`、`activate`、`window-all-closed`、退出流程 | 已实践 |
 | `BrowserWindow` | 窗口创建、显示、销毁和 `webPreferences` | 已实践 |
-| `webContents` | 页面生命周期、导航、IPC、DevTools 和崩溃处理 | 待读 |
+| `webContents` | 页面生命周期、导航、IPC、DevTools 和崩溃处理 | 已局部实践，见实验索引 |
 | `session` | 权限、Cookie、网络请求和下载管理 | 待读 |
-| 导航与新窗口 | `will-navigate`、`setWindowOpenHandler`、外链校验 | 待读 |
-| Renderer 稳定性 | `render-process-gone`、无响应和加载失败恢复 | 待读 |
+| 导航与新窗口 | `will-navigate`、`setWindowOpenHandler`、外链校验 | 已局部实践，完整策略待验证 |
+| Renderer 稳定性 | `render-process-gone`、无响应和加载失败恢复 | 已手动终止与重载；无响应、恢复策略待实践 |
 
 ### 3.3 按需深入
 
@@ -200,14 +202,12 @@ WebDriver、Selenium、WebdriverIO 和 Playwright 不是四个平级概念。
 
 后续按以下顺序推进：
 
-1. 学习 `webContents` 的页面加载事件、DevTools 控制和 Renderer 崩溃处理。
-2. 实践 `will-navigate`、`setWindowOpenHandler`、`shell.openExternal()` 和 URL 白名单。
-3. 学习 `session` 的 Cookie、缓存、代理、权限、请求拦截和下载管理。
-4. 实践 `render-process-gone`、加载失败和无响应场景的诊断与恢复。
-5. 补充 Playwright 失败截图、Trace Viewer、多窗口测试和诊断信息收集。
-6. 完成 CPU/Heap Profile 分析，并比较基础启动与附加模块后的性能差异。
-7. 观察 Forge 产物中的 `app.asar`，再根据分发需求补齐签名、公证和真实自动更新验证。
-8. 根据实际需求选择 Web 嵌入、通知、拖放、托盘、MessagePort 或 Utility Process 等能力。
+1. 学习 `session`：先理解窗口如何共享或隔离存储，再做最小 Cookie/partition 对照；其余网络能力按需展开。
+2. 补齐导航记录中的待验证分支；讨论 Renderer 无响应、状态保存和恢复策略，区别于已做的手动 reload。
+3. 补充 Playwright 失败截图、Trace Viewer 和诊断信息收集；已有多窗口 Smoke Test 继续作为检查点。
+4. 完成 CPU/Heap Profile 分析，并比较基础启动与附加模块后的性能差异。
+5. 观察 Forge 产物中的 `app.asar`，再根据分发需求补齐签名、公证和真实自动更新验证。
+6. 根据实际需求选择 Web 嵌入、通知、拖放、托盘、MessagePort 或 Utility Process 等能力。
 
 ## 8. 维护方式与参考资料
 
