@@ -6,6 +6,9 @@ async function runAction (action) {
   try {
     const state = await action()
     document.getElementById('window-title').textContent = state.window
+    document.getElementById('experiment-mode').textContent = state.mode === 'shared'
+      ? '第一轮：两个窗口，同一个 partition。'
+      : '第二轮：只改变 B 的 partition，观察 Cookie 是否隔离。'
     output.textContent = JSON.stringify(state, null, 2)
   } catch (error) {
     output.textContent = `操作失败：${error.message}`

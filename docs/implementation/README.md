@@ -4,7 +4,7 @@
 > **状态**: 已实现
 > **作者**: shiyu.chen
 > **创建日期**: 2026-10-04
-> **最后更新**: 2026-10-06
+> **最后更新**: 2026-10-07
 
 ## TL;DR
 
@@ -22,7 +22,7 @@
 | [Settings 如何创建、显示和关闭？](impl_modal_lifecycle.md) | Window → Open Settings → Close | 历史手测；现有测试覆盖父子关系、modal、独立 webContents 和关闭 |
 | [页面加载失败与不同导航如何区分？](impl_navigation_loading.md) | Settings 内六个链接；失败场景见文档 | 历史日志与当前代码核对；未纳入自动化测试 |
 | [Renderer 终止后哪些对象和状态仍在？](impl_renderer_recovery.md) | VS Code Main Debug Console | 历史控制台实测；临时探针未写入业务代码，无自动恢复实现 |
-| [独立窗口是否能共享 Cookie？](impl_session_partition.md) | Session → Open Shared Windows | 第一轮自动化通过，用户确认已手测；隔离与持久化对照尚未实现 |
+| [独立窗口如何共享或隔离 Cookie？](impl_session_partition.md) | Session → Open Shared Windows / Open Isolated Windows | 共享、隔离自动化通过；第一轮已手测，第二轮待手测，持久化对照尚未实现 |
 
 ## 验证基准
 
@@ -33,6 +33,10 @@
 2026-10-04 在允许桌面进程启动的环境复测 `npm test`：`2 passed (4.1s)`。通过的是上述两个现有用例，不扩展为导航、崩溃、签名或自动更新已验证。新克隆安装和 Forge 打包没有在本轮重新执行。
 
 2026-10-06 使用 Node.js 22.23.2 运行 `npm test`：受限环境首先报 `Process failed to launch`，未执行到业务断言；允许桌面进程启动后复测为 `3 passed (6.2s)`。新增用例验证 A 写入/B 读取、B 删除/A 读取为空、不同 webContents 共享同一个内存 Session；原有两个用例也通过。新增 JavaScript 的语法检查和 `git diff --check` 通过。随后用户确认第一轮已手测；跨 partition 隔离及重启持久化尚未验证。
+
+2026-10-06 第二轮改动后再次执行 `npm test`：`4 passed (8.5s)`（macOS、Node.js 22.23.2、开发态 Electron）。新增隔离用例验证 B 读取不到 A 的 Cookie、双方写入互不覆盖、A 删除不影响 B；原有三个用例也通过。本次未验证跨模式提示弹窗、重启持久化或打包产物。
+
+2026-10-07 窗口布局与共享样式调整后执行 `npm test`：`4 passed (12.7s)`。新增断言确认主窗口最大化，A、B 不重叠、等高且位于显示器可用区域内；Cookie 对照仍通过。已查看测试生成的 Session 页面截图，按钮和 JSON 展示正常；其他操作系统、多显示器切换尚未实测。
 
 ## 如何维护
 

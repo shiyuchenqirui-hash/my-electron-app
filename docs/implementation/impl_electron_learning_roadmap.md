@@ -202,7 +202,7 @@ WebDriver、Selenium、WebdriverIO 和 Playwright 不是四个平级概念。
 
 后续按以下顺序推进：
 
-1. 学习 `session`：共享、隔离、持久化逐轮实验。[第一轮共享 Cookie](impl_session_partition.md) 已手测；第二、三轮尚未实现。三轮结束后整理记录并提醒 commit/push，其余网络能力按需展开。
+1. 学习 `session`：共享、隔离、持久化逐轮实验。[第一轮共享 Cookie](impl_session_partition.md) 已手测；第二轮隔离已实现并通过自动化，待用户手测；第三轮持久化尚未实现。三轮结束后整理记录并提醒 commit/push，其余网络能力按需展开。
 2. 补齐导航记录中的待验证分支；讨论 Renderer 无响应、状态保存和恢复策略，区别于已做的手动 reload。
 3. 补充 Playwright 失败截图、Trace Viewer 和诊断信息收集；已有多窗口 Smoke Test 继续作为检查点。
 4. 完成 CPU/Heap Profile 分析，并比较基础启动与附加模块后的性能差异。

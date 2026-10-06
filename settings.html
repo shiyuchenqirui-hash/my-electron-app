@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./styles.css">
   </head>
-  <body>
+  <body class="compact-page">
+    <main>
+    <p class="eyebrow">Electron Lab / Window & Navigation</p>
     <h1>Settings</h1>
     <p>This modal window has its own BrowserWindow, webContents, Preload, and Renderer.</p>
     <nav aria-label="Navigation experiment">
@@ -23,6 +27,7 @@
       <p>This section belongs to the current document.</p>
     </section>
     <button id="close-settings" type="button">Close</button>
+    </main>
     <script src="./settings-renderer.js"></script>
   </body>
 </html>

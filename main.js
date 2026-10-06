@@ -216,6 +216,8 @@ function createSettingsWindow (mainWindow) {
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
+    show: false,
+    backgroundColor: '#f4f3ee',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -244,7 +246,11 @@ function createWindow () {
       submenu: [{
         id: 'open-session-lab',
         label: 'Open Shared Windows',
-        click: openSessionWindows
+        click: () => openSessionWindows('shared')
+      }, {
+        id: 'open-isolated-session-lab',
+        label: 'Open Isolated Windows',
+        click: () => openSessionWindows('isolated')
       }]
     },
     { id: 'window-menu', role: 'windowMenu' }
@@ -261,6 +267,10 @@ function createWindow () {
 
   Menu.setApplicationMenu(menu)
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize()
+    mainWindow.show()
+  })
   mainWindow.loadFile('index.html')
 
   mainWindow.on('close', () => {

@@ -1,16 +1,16 @@
-# Session 与窗口：共享 Cookie 实验
+# Session 与窗口：Cookie 共享与隔离实验
 
 > **类型**: 实现记录
 > **状态**: 已实现
 > **作者**: shiyu.chen
 > **创建日期**: 2026-10-06
-> **最后更新**: 2026-10-06
+> **最后更新**: 2026-10-07
 
 ## TL;DR
 
-- 第一轮研究两个独立窗口是否能共享 Cookie；两个窗口都使用 `session-lab-shared` partition。
+- 第一轮使用同一个 partition 观察 Cookie 共享；第二轮只改变 B 的 partition，观察同名 Cookie 隔离。
 - 操作通过专用 Preload 请求 Main，Main 读取请求窗口自身的 `webContents.session`，没有在 JavaScript 变量中代存 Cookie。
-- 本轮不验证重启持久化、真实网站登录或跨 partition 隔离；后续逐轮增加对照。
+- 第一轮已手测；第二轮自动化通过，用户手测待完成。两轮均不验证重启持久化或真实网站登录。
 
 ## 官方资料与实验边界
 
@@ -21,7 +21,13 @@
 
 ## 运行与观察
 
-在项目根目录执行 `npm start`，或在 VS Code“运行和调试”中选择 `Main`，点击绿色三角启动。先关闭已有 Settings 模态窗口，再点应用顶部菜单 **Session → Open Shared Windows**。出现 Session A、Session B 后可拖动标题栏并排摆放；重复点菜单会复用尚未关闭的实验窗口。
+在项目根目录执行 `npm start`，或在 VS Code“运行和调试”中选择 `Main`，点击绿色三角启动。主窗口自动最大化，但不进入 macOS 独立全屏空间。先关闭已有 Settings 模态窗口。Session A、B 自动左右排列；重复选择同一模式会复用窗口并重新排齐。
+
+排列区域取自当前聚焦窗口所在显示器的 `workArea`；无聚焦窗口时使用鼠标所在显示器。外边距为 16 DIP、窗口间距为 12 DIP，避开菜单栏和 Dock。页面共用本地 `styles.css`，不改变 Cookie 和 IPC 语义。
+
+### 第一轮：共享
+
+点应用顶部菜单 **Session → Open Shared Windows**。
 
 按以下顺序操作，先预测再看结果：
 
@@ -35,6 +41,23 @@
 
 点击红色关闭按钮关闭实验窗口；通过应用菜单 **Quit** 完整退出。创建/重开窗口不会自动写入或清空 Cookie，重复实验可用删除按钮重置测试数据。
 
+### 第二轮：隔离
+
+先关闭 A、B 两个实验窗口，再点 **Session → Open Isolated Windows**。如果旧模式窗口还在，程序只提示先关闭，不会偷偷替换窗口或清空 Cookie。两个模式使用相同 HTML、Preload、IPC、Cookie URL 和名称；只改变 B 的 partition：
+
+| 模式 | A 的 partition | B 的 partition | Session 比较预期 |
+| --- | --- | --- | --- |
+| shared | `session-lab-shared` | `session-lab-shared` | `true` |
+| isolated | `session-lab-shared` | `session-lab-isolated-b` | `false` |
+
+1. A、B **分别**点击“删除测试 Cookie”，等待操作完成，确认两边为 `null`。A 沿用第一轮的 Session，可能还保留先前写入值；切换模式不是清空数据。
+2. A 写入，记下值；B 读取，预期仍为 `null`。
+3. B 写入，记下自己的值；A 再读取，预期仍为 A 的原值。
+4. A 删除，再让 B 读取，预期 B 的值仍在。
+5. 对比 `partition` 和 `sameSessionAsPeer`：前者不同，后者为 `false`。
+
+预期解释：相同 Cookie URL/名称分别存入两个 Session，不再共享；不是换了 HTML，也不是 Main 按窗口分支伪造读写结果。用户手测结果待补记。
+
 ## 代码与断点
 
 | 文件 | 阅读重点与断点位置 |
@@ -44,9 +67,11 @@
 | [session-renderer.js](../../session-renderer.js) | 按钮调用 `runAction()`，等待返回后更新当前窗口的结果 |
 | [main.js](../../main.js) | 菜单入口，以及 `whenReady` 后一次性注册 IPC handler |
 
+第二轮先看 `session-lab.js` 顶部 `partitions` 配置，再看创建窗口时的 `partition: partitions[mode][label]`。`mode`、`partition`、`sameSessionAsPeer` 都是实验输出字段：前两个来自 Main 保存的配置，后者通过比较两个 `webContents.session` 对象计算，不是 Electron 自带的三个属性。
+
 这轮先在 VS Code 调试 Main 即可：打开 `session-lab.js`，点击 `cookies.set()` / `cookies.get()` 对应行号左侧设置断点，再操作窗口按钮。暂停时查看 `win`、`ownSession`、`cookies`；`await cookies.get()` 执行前还没有返回结果，点调试工具栏“单步跳过”后再看。点“继续”让页面收到结果；不要在 Main 暂停期间等待按钮响应。
 
-共享的是 Session，不是两个页面的 DOM 或 JS 变量。数据路径如下：
+共享模式共享的是 Session，不是两个页面的 DOM 或 JS 变量。第一轮的数据路径如下；第二轮 Main 按请求窗口拿到不同的 Session：
 
 ```mermaid
 flowchart LR
@@ -62,6 +87,6 @@ Main 校验调用方属于实验窗口且来自其顶层本地页面，再返回
 
 ## 验证与下一轮
 
-本轮代码于 2026-10-06 添加，开发态、macOS。用户于同日确认已完成第一轮手测；本次未新增逐步截图或日志。自动化检查状态在 [实验索引](README.md) 记录，测试入口为 [electron.smoke.spec.js](../../tests/electron.smoke.spec.js)。
+第一轮代码于 2026-10-06 添加，开发态、macOS。用户于同日确认已完成第一轮手测；本次未新增逐步截图或日志。第一轮基线提交为 `2c3b01f`，第二轮为其后的工作区改动。自动化检查状态在 [实验索引](README.md) 记录，测试入口为 [electron.smoke.spec.js](../../tests/electron.smoke.spec.js)。
 
-后续第二轮只改变 B 的 partition，第三轮对照内存和持久 partition，并使用明确未来过期时间的 Cookie 检查完整退出重启。三轮完成后整理实测结论、更新学习进度，并提醒提交、推送 GitHub；本轮不自动执行 Git 写操作。
+第二轮于同日通过自动化对照：B 读不到 A 的 Cookie、两侧写入互不覆盖、A 删除不影响 B；用户手测待完成。第三轮尚未实现，将对照内存和持久 partition，并使用明确未来过期时间的 Cookie 检查完整退出重启。三轮完成后整理实测结论、更新学习进度，并提醒提交、推送 GitHub。

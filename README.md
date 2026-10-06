@@ -15,12 +15,12 @@ npm ci
 npm start
 ```
 
-启动后出现 `Menu Counter` 窗口，开发模式会同时打开 DevTools。首次安装需要下载 Electron。
+启动后出现最大化的 `Menu Counter` 窗口（不进入 macOS 独立全屏空间），开发模式会同时打开 DevTools。首次安装需要下载 Electron。
 
 - 点击应用菜单 **Counter → Increment / Decrement**，观察数字和启动终端输出。
 - 点击 **Window → Open Settings**，打开模态设置窗口；窗口内的 **Close** 按钮关闭它。
 - Settings 中有同页 hash、当前窗口跳转、新窗口和外链的实验入口；逐项说明见实验索引。
-- 点击 **Session → Open Shared Windows**，进行 [双窗口共享 Cookie 实验](docs/implementation/impl_session_partition.md)。
+- 点击 **Session → Open Shared Windows / Open Isolated Windows**，进行 [双窗口 Cookie 共享与隔离实验](docs/implementation/impl_session_partition.md)；A、B 自动按当前显示器可用区域左右排列，重复选择同一菜单可重新排齐。切换模式前先关闭 A、B。
 - macOS 点击应用菜单中的 **Quit** 退出整个应用；只关闭窗口可能仍保留应用进程。
 
 ## 调试与测试
@@ -31,9 +31,11 @@ npm start
 npm test
 ```
 
-[Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、桥接 API 存在、模态窗口关系和关闭，以及双窗口 Cookie 共享。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
+[Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、桥接 API 存在、模态窗口关系和关闭，以及双窗口 Cookie 共享与隔离。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
 
 ## 代码入口
+
+四个 HTML 页面共用 [styles.css](styles.css)：本地 CSS 变量、基础控件和实验结果区样式，不增加 CSS 框架、构建步骤或 CDN 请求。
 
 | 文件 | 阅读重点 |
 | --- | --- |
