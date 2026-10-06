@@ -25,6 +25,10 @@
 
 排列区域取自当前聚焦窗口所在显示器的 `workArea`；无聚焦窗口时使用鼠标所在显示器。外边距为 16 DIP、窗口间距为 12 DIP，避开菜单栏和 Dock。页面使用共享 Tailwind 主题与 shadcn/ui 组件，Vite 输出到 `dist/renderer/`；不改变 Cookie 和 IPC 语义。
 
+页面上半部分展示 partition、窗口与 webContents ID、存储类型、共享关系和 Cookie 值；“原始 JSON”可展开检查同一份返回数据。操作状态中的时间是当前 Renderer 收到成功结果的本地时间，不是 Cookie 的过期时间或服务端时间。另一窗口的写入不会自动刷新本窗口，需要主动点击“读取 Cookie”。
+
+请求期间三个按钮暂时禁用；失败时显示错误并恢复按钮，已有成功快照不会被清空，但会明确标为上一次结果。关闭对照窗口后重新读取，共享关系显示“无对照窗口”，不表示 Cookie 被删除。页面中的“先预测，再观察”只列实验预期，不自动宣布实验通过。
+
 ### 第一轮：共享
 
 点应用顶部菜单 **Session → Open Shared Windows**。
@@ -65,6 +69,7 @@
 | [session-lab.js](../../session-lab.js) | `openSessionWindows()` 中的 `webPreferences.partition`；`writeCookie()` 中的 `cookies.set()`；`readState()` 中的 `cookies.get()` 和 Session 对象比较 |
 | [session-preload.js](../../session-preload.js) | 只暴露三个固定操作，不允许 Renderer 自选 IPC 通道、Cookie URL 或 partition |
 | [session-renderer.js](../../session-renderer.js) | 按钮调用 `runAction()`，等待返回后更新当前窗口的结果 |
+| [ui/session-page.jsx](../../ui/session-page.jsx) | 将同一份返回数据展示为状态摘要、操作反馈和可展开 JSON；不自行读写 Cookie |
 | [main.js](../../main.js) | 菜单入口，以及 `whenReady` 后一次性注册 IPC handler |
 
 第二轮先看 `session-lab.js` 顶部 `partitions` 配置，再看创建窗口时的 `partition: partitions[mode][label]`。`mode`、`partition`、`sameSessionAsPeer` 都是实验输出字段：前两个来自 Main 保存的配置，后者通过比较两个 `webContents.session` 对象计算，不是 Electron 自带的三个属性。

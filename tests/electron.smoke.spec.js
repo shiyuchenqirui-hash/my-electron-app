@@ -227,5 +227,31 @@ test('改变 B 的 partition 后，同名 Cookie 的写入和删除互不影响'
   await a.getByRole('button', { name: '删除测试 Cookie' }).click()
   await expect(a.locator('#result')).toContainText('"cookie": null')
   expect((await b.evaluate(() => window.sessionLab.readCookie())).cookie).toBe(valueB)
+  await expect(b.locator('#cookie-value')).toHaveText(valueB)
+  await expect(b.locator('#session-relation')).toHaveText('独立 Session')
+  await expect(b.getByRole('status')).toContainText('写入完成')
+  await expect(b.getByRole('status')).toContainText('仅更新本窗口快照')
   await b.screenshot({ path: testInfo.outputPath('session-isolated.png'), fullPage: true })
+
+  await electronApp.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows().find(win => win.getTitle() === 'Session A').close()
+  })
+  await b.getByRole('button', { name: '读取 Cookie', exact: true }).click()
+  await expect(b.locator('#session-relation')).toHaveText('无对照窗口')
+  await expect(b.locator('#cookie-value')).toHaveText(valueB)
+
+  // Failure injection is test-only; the production IPC handler remains unchanged.
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('session-lab:read')
+    ipcMain.handle('session-lab:read', () => { throw new Error('模拟读取失败') })
+  })
+  await b.getByRole('button', { name: '读取 Cookie', exact: true }).click()
+  await expect(b.getByRole('alert')).toContainText('模拟读取失败')
+  await expect(b.getByRole('status')).toContainText('上一次成功快照')
+  await expect(b.locator('#cookie-value')).toHaveText(valueB)
+  await expect(b.getByRole('button', { name: '读取 Cookie', exact: true })).toBeEnabled()
+  await b.getByRole('button', { name: '删除测试 Cookie' }).click()
+  await expect(b.getByRole('alert')).toHaveCount(0)
+  await expect(b.locator('#cookie-value')).toHaveText('未设置（null）')
+  await expect(b.getByRole('status')).toContainText('删除完成')
 })

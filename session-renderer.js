@@ -7,6 +7,7 @@ function SessionApp () {
   const [state, setState] = useState(null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
+  const [activity, setActivity] = useState(null)
   const inFlight = useRef(false)
 
   const runAction = useCallback(async (action) => {
@@ -17,6 +18,7 @@ function SessionApp () {
     try {
       const result = await window.sessionLab[action]()
       setState(result)
+      setActivity({ action, completedAt: new Date().toISOString() })
     } catch (error) {
       setError(error.message)
     } finally {
@@ -27,7 +29,7 @@ function SessionApp () {
 
   useEffect(() => { runAction('readCookie') }, [runAction])
 
-  return createElement(SessionPage, { state, busy, error, onAction: runAction })
+  return createElement(SessionPage, { state, busy, error, activity, onAction: runAction })
 }
 
 createRoot(document.getElementById('root')).render(createElement(SessionApp))

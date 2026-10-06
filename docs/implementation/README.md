@@ -18,7 +18,7 @@
 
 | 研究问题 | 触发入口 | 证据与边界 |
 | --- | --- | --- |
-| [一次计数消息如何经过三个执行环境？](impl_ipc_counter.md) | Counter → Increment / Decrement | 历史断点手测；现有测试只检查启动和 API 存在，不断言菜单计数往返 |
+| [一次计数消息如何经过三个执行环境？](impl_ipc_counter.md) | Counter → Increment / Decrement | 历史断点手测；自动化覆盖菜单递增与重载后重新订阅，未逐条断言返回 Main 的计数日志 |
 | [Settings 如何创建、显示和关闭？](impl_modal_lifecycle.md) | Window → Open Settings → Close | 历史手测；现有测试覆盖父子关系、modal、独立 webContents 和关闭 |
 | [页面加载失败与不同导航如何区分？](impl_navigation_loading.md) | Settings 内六个链接；失败场景见文档 | 历史日志；已增加 hash、跨文档、本地拒绝与新窗口拒绝的自动化检查 |
 | [Renderer 终止后哪些对象和状态仍在？](impl_renderer_recovery.md) | VS Code Main Debug Console | 历史控制台实测；临时探针未写入业务代码，无自动恢复实现 |
@@ -40,6 +40,8 @@
 2026-10-07 窗口布局与共享样式调整后执行 `npm test`：`4 passed (12.7s)`。新增断言确认主窗口最大化，A、B 不重叠、等高且位于显示器可用区域内；Cookie 对照仍通过。已查看测试生成的 Session 页面截图，按钮和 JSON 展示正常；其他操作系统、多显示器切换尚未实测。
 
 2026-10-07 界面迁移后，在 macOS、Node.js 22.23.2 执行 `npm test`：`5 passed (17.6s)`。覆盖原有四项实验，增加计数器菜单/重载及 Settings 导航回归。首次新增导航检查曾因菜单尚未就绪和等待被取消导航而失败；明确等待就绪、拒绝导航使用 `noWaitAfter` 并从 Main 核对真实 URL/页面后通过，未修改导航策略。已查看主窗口和 Settings 截图。`npm run package` 成功，ASAR 内四个 HTML 和 JS/CSS 资源存在；没有启动该打包产物，也未发布 Release。source map 路径核对通过，VS Code 断点仍待用户手测。
+
+2026-10-07 Session 状态界面优化后执行 `npm test`：`5 passed (18.5s)`。新增断言验证摘要与原始值一致、关闭 A 后 B 显示无对照窗口且 Cookie 保留、模拟 IPC 读取失败时保留旧快照并恢复按钮、随后删除成功可清除错误。模拟错误仅在测试中注入，未修改业务 IPC handler。已查看隔离模式页面截图。最终 `npm run package` 在受限环境因 GitHub DNS 失败；允许联网后重试成功，产物为 macOS arm64，未启动打包产物或发布 Release。
 
 ## 如何维护
 
