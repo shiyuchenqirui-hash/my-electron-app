@@ -20,6 +20,7 @@ npm start
 - 点击应用菜单 **Counter → Increment / Decrement**，观察数字和启动终端输出。
 - 点击 **Window → Open Settings**，打开模态设置窗口；窗口内的 **Close** 按钮关闭它。
 - Settings 中有同页 hash、当前窗口跳转、新窗口和外链的实验入口；逐项说明见实验索引。
+- 点击 **Session → Open Shared Windows**，进行 [双窗口共享 Cookie 实验](docs/implementation/impl_session_partition.md)。
 - macOS 点击应用菜单中的 **Quit** 退出整个应用；只关闭窗口可能仍保留应用进程。
 
 ## 调试与测试
@@ -30,7 +31,7 @@ npm start
 npm test
 ```
 
-[现有两个 Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、桥接 API 存在、模态窗口关系和关闭。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
+[Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、桥接 API 存在、模态窗口关系和关闭，以及双窗口 Cookie 共享。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
 
 ## 代码入口
 

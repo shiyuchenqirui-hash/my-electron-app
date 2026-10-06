@@ -4,7 +4,7 @@
 > **状态**: 草稿
 > **作者**: shiyu.chen
 > **创建日期**: 2026-09-29
-> **最后更新**: 2026-10-04
+> **最后更新**: 2026-10-06
 
 ## TL;DR
 
@@ -92,7 +92,7 @@
 | `app` 生命周期 | `ready`、`activate`、`window-all-closed`、退出流程 | 已实践 |
 | `BrowserWindow` | 窗口创建、显示、销毁和 `webPreferences` | 已实践 |
 | `webContents` | 页面生命周期、导航、IPC、DevTools 和崩溃处理 | 已局部实践，见实验索引 |
-| `session` | 权限、Cookie、网络请求和下载管理 | 待读 |
+| `session` | 权限、Cookie、网络请求和下载管理 | 共享与持久化概念已讨论；第一轮共享实验已手测，其余按需阅读 |
 | 导航与新窗口 | `will-navigate`、`setWindowOpenHandler`、外链校验 | 已局部实践，完整策略待验证 |
 | Renderer 稳定性 | `render-process-gone`、无响应和加载失败恢复 | 已手动终止与重载；无响应、恢复策略待实践 |
 
@@ -202,7 +202,7 @@ WebDriver、Selenium、WebdriverIO 和 Playwright 不是四个平级概念。
 
 后续按以下顺序推进：
 
-1. 学习 `session`：先理解窗口如何共享或隔离存储，再做最小 Cookie/partition 对照；其余网络能力按需展开。
+1. 学习 `session`：共享、隔离、持久化逐轮实验。[第一轮共享 Cookie](impl_session_partition.md) 已手测；第二、三轮尚未实现。三轮结束后整理记录并提醒 commit/push，其余网络能力按需展开。
 2. 补齐导航记录中的待验证分支；讨论 Renderer 无响应、状态保存和恢复策略，区别于已做的手动 reload。
 3. 补充 Playwright 失败截图、Trace Viewer 和诊断信息收集；已有多窗口 Smoke Test 继续作为检查点。
 4. 完成 CPU/Heap Profile 分析，并比较基础启动与附加模块后的性能差异。

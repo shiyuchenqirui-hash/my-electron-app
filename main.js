@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, MenuItem, ipcMain, shell } = require('electron/main')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { openSessionWindows, registerSessionLabHandlers } = require('./session-lab')
 
 const allowedSettingsPages = new Set([
   pathToFileURL(path.join(__dirname, 'settings.html')).href,
@@ -238,6 +239,14 @@ function createWindow () {
         }
       ]
     },
+    {
+      label: 'Session',
+      submenu: [{
+        id: 'open-session-lab',
+        label: 'Open Shared Windows',
+        click: openSessionWindows
+      }]
+    },
     { id: 'window-menu', role: 'windowMenu' }
   ])
 
@@ -271,6 +280,7 @@ function createWindow () {
 app.whenReady().then(() => {
   ipcMain.on('counter-value', handleCounterValue)
   ipcMain.on('settings:close', handleCloseSettings)
+  registerSessionLabHandlers()
   createWindow()
 
   app.on('activate', function () {

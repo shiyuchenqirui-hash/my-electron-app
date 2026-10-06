@@ -4,7 +4,7 @@
 > **状态**: 已实现
 > **作者**: shiyu.chen
 > **创建日期**: 2026-10-04
-> **最后更新**: 2026-10-05
+> **最后更新**: 2026-10-06
 
 ## TL;DR
 
@@ -22,6 +22,7 @@
 | [Settings 如何创建、显示和关闭？](impl_modal_lifecycle.md) | Window → Open Settings → Close | 历史手测；现有测试覆盖父子关系、modal、独立 webContents 和关闭 |
 | [页面加载失败与不同导航如何区分？](impl_navigation_loading.md) | Settings 内六个链接；失败场景见文档 | 历史日志与当前代码核对；未纳入自动化测试 |
 | [Renderer 终止后哪些对象和状态仍在？](impl_renderer_recovery.md) | VS Code Main Debug Console | 历史控制台实测；临时探针未写入业务代码，无自动恢复实现 |
+| [独立窗口是否能共享 Cookie？](impl_session_partition.md) | Session → Open Shared Windows | 第一轮自动化通过，用户确认已手测；隔离与持久化对照尚未实现 |
 
 ## 验证基准
 
@@ -30,6 +31,8 @@
 当前已安装版本：Electron 44.4.5、Forge 7.11.2、Playwright Test 1.63.0；复测使用 macOS 与 Node.js 22.23.2。首次在受限工具环境执行 `npm test` 时，Electron 未能启动，随后出现清理阶段的 `electronApp.close()` 错误；该次没有验证业务断言。
 
 2026-10-04 在允许桌面进程启动的环境复测 `npm test`：`2 passed (4.1s)`。通过的是上述两个现有用例，不扩展为导航、崩溃、签名或自动更新已验证。新克隆安装和 Forge 打包没有在本轮重新执行。
+
+2026-10-06 使用 Node.js 22.23.2 运行 `npm test`：受限环境首先报 `Process failed to launch`，未执行到业务断言；允许桌面进程启动后复测为 `3 passed (6.2s)`。新增用例验证 A 写入/B 读取、B 删除/A 读取为空、不同 webContents 共享同一个内存 Session；原有两个用例也通过。新增 JavaScript 的语法检查和 `git diff --check` 通过。随后用户确认第一轮已手测；跨 partition 隔离及重启持久化尚未验证。
 
 ## 如何维护
 
