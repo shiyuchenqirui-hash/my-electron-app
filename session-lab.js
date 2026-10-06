@@ -1,6 +1,7 @@
 const { BrowserWindow, dialog, ipcMain, screen } = require('electron/main')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { rendererPath } = require('./renderer-path')
 
 // Round 2 changes only B's partition. Both modes remain in-memory.
 const partitions = {
@@ -9,7 +10,7 @@ const partitions = {
 }
 const cookieURL = 'https://session-lab.example/'
 const cookieName = 'study-cookie'
-const pageURL = pathToFileURL(path.join(__dirname, 'session-lab.html')).href
+const pageURL = pathToFileURL(rendererPath('session-lab.html')).href
 const windows = new Map()
 const windowPartitions = new WeakMap()
 let currentMode = 'shared'
@@ -131,7 +132,7 @@ function openSessionWindows (mode = 'shared') {
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     win.once('ready-to-show', () => win.show())
     win.on('closed', () => windows.delete(label))
-    win.loadFile('session-lab.html').catch(error => {
+    win.loadFile(rendererPath('session-lab.html')).catch(error => {
       console.error('[session-lab] load failed', error)
       if (!win.isDestroyed()) win.destroy()
     })

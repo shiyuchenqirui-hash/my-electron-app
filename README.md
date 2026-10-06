@@ -25,25 +25,28 @@ npm start
 
 ## 调试与测试
 
-在 VS Code 左侧选择“运行和调试”，选择 **Main + renderer**，点击绿色三角启动。先打开 Settings，再选择 **Renderer - Settings Window** 并点击绿色三角附加设置页。配置见 [.vscode/launch.json](.vscode/launch.json)；附加使用本机 9222 端口，运行前退出上一轮实例。
+在 VS Code 左侧选择“运行和调试”，选择 **Main + renderer**，点击绿色三角启动（会先自动构建 Renderer）。先打开 Settings，再选择 **Renderer - Settings Window** 并点击绿色三角附加设置页。配置见 [.vscode/launch.json](.vscode/launch.json)；附加使用本机 9222 端口，运行前退出上一轮实例。Main、Preload 仍调试原文件；Renderer 通过 source map 对应根目录的 `*-renderer.js`、`renderer.js` 和 `ui/` 源码。
 
 ```sh
 npm test
 ```
 
-[Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、桥接 API 存在、模态窗口关系和关闭，以及双窗口 Cookie 共享与隔离。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
+[Smoke Test](tests/electron.smoke.spec.js) 覆盖开发态启动、计数器菜单与重载、模态窗口关系和关闭、部分导航策略，以及双窗口 Cookie 共享与隔离。它们不覆盖全部 IPC、导航、崩溃实验，也不验证打包产物。最近一次执行情况统一记录在 [实验索引](docs/implementation/README.md)。
 
 ## 代码入口
 
-四个 HTML 页面共用 [styles.css](styles.css)：本地 CSS 变量、基础控件和实验结果区样式，不增加 CSS 框架、构建步骤或 CDN 请求。
+四个页面使用 React + Tailwind CSS + shadcn/ui。Vite 构建到 `dist/renderer/`，Electron 仍通过 `loadFile()` 加载独立 HTML，不使用 SPA 路由或远程开发服务器。[styles.css](styles.css) 定义共享主题，[ui/components/ui](ui/components/ui) 保存官方 CLI 生成并适配的组件源码。方案与迁移边界见 [界面构建记录](docs/implementation/impl_renderer_ui.md)。
+
+`npm start`、Forge 打包和 `npm test` 会先构建页面。编辑 UI 时可另开终端执行 `npm run build:watch`，等构建成功后点击应用菜单 **View → Reload**；没有启用 HMR。直接执行 `npx electron .` 前须先运行 `npm run build`，否则可能缺少页面或加载旧产物。
 
 | 文件 | 阅读重点 |
 | --- | --- |
 | [main.js](main.js) | 创建窗口、应用菜单、IPC 接收、Settings 导航策略及加载日志 |
 | [preload.js](preload.js) | 通过 `contextBridge` 暴露有限 API，过滤原始 IPC event |
-| [renderer.js](renderer.js) | 接收菜单消息、更新 DOM、回传计数 |
+| [renderer.js](renderer.js) | 接收菜单消息、更新 React 状态、回传计数 |
 | [settings-renderer.js](settings-renderer.js) | 设置页关闭按钮到 Preload 的调用 |
-| [settings.html](settings.html)、[navigation-target.html](navigation-target.html) | 同页与跨文档导航的对照入口 |
+| [ui/settings-page.jsx](ui/settings-page.jsx) | 同页与跨文档导航的对照链接；两个独立 HTML 仍保留 |
+| [session-renderer.js](session-renderer.js)、[ui/session-page.jsx](ui/session-page.jsx) | Session IPC 操作和展示分层 |
 
 ## 构建与当前边界
 

@@ -1,20 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Navigation Target</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./styles.css">
+    <title>Navigation Target</title>
   </head>
-  <body class="compact-page">
-    <main>
-    <p class="eyebrow">Electron Lab / Document Navigation</p>
-    <h1>Navigation Target</h1>
-    <p>This is a different document loaded in the existing Settings webContents.</p>
-    <p><a href="./settings.html">Back to Settings</a></p>
-    <button id="close-settings" type="button">Close</button>
-    </main>
-    <script src="./settings-renderer.js"></script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./settings-renderer.js"></script>
   </body>
 </html>

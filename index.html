@@ -1,32 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Menu Counter</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./styles.css">
+    <title>Menu Counter</title>
   </head>
   <body>
-    <main>
-      <header>
-        <p class="eyebrow">Electron Lab / Learning by Experiment</p>
-        <h1>桌面实验台</h1>
-        <p class="intro">从一个窗口、一条消息到一份 Session。每次改变一个条件，观察真实的运行结果。</p>
-      </header>
-      <section class="counter-panel" aria-label="Menu Counter">
-        <p class="eyebrow">01 / IPC Counter</p>
-        <span>Current value</span>
-        <strong id="counter">0</strong>
-        <p class="intro">顶部菜单 Counter → Increment / Decrement，观察 Main 与 Renderer 的消息往返。</p>
-      </section>
-      <ul class="experiment-list">
-        <li><strong>02 / 窗口与导航</strong><span>Window → Open Settings · 模态窗口、加载事件与导航边界</span></li>
-        <li><strong>03 / Session 共享与隔离</strong><span>Session → Open Shared Windows / Open Isolated Windows · 双窗口 Cookie 对照</span></li>
-      </ul>
-      <p class="notes">通过顶部应用菜单进入实验。实验步骤与结果记录在仓库 docs/implementation/ 中。</p>
-    </main>
-    <script src="./renderer.js"></script>
+    <div id="root"></div>
+    <script type="module" src="./renderer.js"></script>
   </body>
 </html>

@@ -2,6 +2,12 @@ const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
+  hooks: {
+    generateAssets: async () => {
+      const { build } = await import('vite')
+      await build()
+    },
+  },
   packagerConfig: {
     asar: true,
   },

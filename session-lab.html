@@ -2,34 +2,12 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Session Lab</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./styles.css">
+    <title>Session Lab</title>
   </head>
-  <body class="lab-page">
-    <main>
-    <header>
-    <p class="eyebrow">Electron Lab / Browser Session</p>
-    <h1 id="window-title">Session Lab</h1>
-    <p id="experiment-mode">正在读取实验模式……</p>
-    </header>
-    <p class="intro">先在 A 写入，再到 B 读取。比较同一枚 Cookie 在不同窗口中的结果。</p>
-    <div class="actions">
-    <button id="write-cookie">写入测试 Cookie</button>
-    <button id="read-cookie" class="secondary">读取 Cookie</button>
-    <button id="remove-cookie" class="danger">删除测试 Cookie</button>
-    </div>
-    <section class="result-panel" aria-label="Session 读取结果">
-    <div class="result-label">SESSION SNAPSHOT · 读取时快照</div>
-    <pre id="result" aria-live="polite">正在读取……</pre>
-    </section>
-    <footer class="notes">
-    <p>输出不会自动同步；每次操作完成后，点击另一侧“读取 Cookie”进行对照。</p>
-    <p>仅操作 <code>session-lab.example</code> 的 <code>study-cookie</code>，不访问网络。</p>
-    <p><code>sameSessionAsPeer</code>：是否共享 Session。<code>null</code> 表示另一个窗口已关闭。</p>
-    </footer>
-    </main>
-    <script src="session-renderer.js"></script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./session-renderer.js"></script>
   </body>
 </html>

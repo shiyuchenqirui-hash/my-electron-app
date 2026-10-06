@@ -1,33 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Settings</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./styles.css">
+    <title>Settings</title>
   </head>
-  <body class="compact-page">
-    <main>
-    <p class="eyebrow">Electron Lab / Window & Navigation</p>
-    <h1>Settings</h1>
-    <p>This modal window has its own BrowserWindow, webContents, Preload, and Renderer.</p>
-    <nav aria-label="Navigation experiment">
-      <ul>
-        <li><a href="#navigation-section">Same-document hash navigation</a></li>
-        <li><a href="./navigation-target.html">Current-window document navigation</a></li>
-        <li><a href="./navigation-target.html" target="_blank">New-window request</a></li>
-        <li><a href="https://www.electronjs.org/zh/docs/latest/">Open Electron docs in system browser</a></li>
-        <li><a href="./index.html">Blocked local page</a></li>
-        <li><a href="https://example.com/">Blocked external site</a></li>
-      </ul>
-    </nav>
-    <section id="navigation-section">
-      <h2>Hash navigation target</h2>
-      <p>This section belongs to the current document.</p>
-    </section>
-    <button id="close-settings" type="button">Close</button>
-    </main>
-    <script src="./settings-renderer.js"></script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./settings-renderer.js"></script>
   </body>
 </html>

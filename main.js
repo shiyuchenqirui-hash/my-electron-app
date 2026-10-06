@@ -2,10 +2,11 @@ const { app, BrowserWindow, Menu, MenuItem, ipcMain, shell } = require('electron
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { openSessionWindows, registerSessionLabHandlers } = require('./session-lab')
+const { rendererPath } = require('./renderer-path')
 
 const allowedSettingsPages = new Set([
-  pathToFileURL(path.join(__dirname, 'settings.html')).href,
-  pathToFileURL(path.join(__dirname, 'navigation-target.html')).href
+  pathToFileURL(rendererPath('settings.html')).href,
+  pathToFileURL(rendererPath('navigation-target.html')).href
 ])
 
 let settingsWindow = null
@@ -205,7 +206,7 @@ function createSettingsWindow (mainWindow) {
     settingsWindow = null
   })
 
-  settingsWindow.loadFile('settings.html').catch((error) => {
+  settingsWindow.loadFile(rendererPath('settings.html')).catch((error) => {
     console.error('[settings] failed to load', error)
 
     if (settingsWindow && !settingsWindow.isDestroyed()) {
@@ -271,7 +272,7 @@ function createWindow () {
     mainWindow.maximize()
     mainWindow.show()
   })
-  mainWindow.loadFile('index.html')
+  mainWindow.loadFile(rendererPath('index.html'))
 
   mainWindow.on('close', () => {
     console.log('[main] close')

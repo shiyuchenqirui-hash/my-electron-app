@@ -17,7 +17,7 @@ test.afterEach(async () => {
   await electronApp.close()
 })
 
-test('应用可以启动，并连接 Main、Preload 和 Renderer', async () => {
+test('应用可以启动，并连接 Main、Preload 和 Renderer', async ({}, testInfo) => {
   const mainWindow = await electronApp.firstWindow()
 
   await expect(mainWindow).toHaveTitle('Menu Counter')
@@ -41,9 +41,21 @@ test('应用可以启动，并连接 Main、Preload 和 Renderer', async () => {
   await expect.poll(() => electronApp.evaluate(({ BrowserWindow }) => (
     BrowserWindow.getAllWindows()[0].isMaximized()
   ))).toBe(true)
+
+  await electronApp.evaluate(({ Menu }) => {
+    Menu.getApplicationMenu().items.find(item => item.label === 'Counter').submenu.items[0].click()
+  })
+  await expect(mainWindow.locator('#counter')).toHaveText('1')
+  await mainWindow.reload()
+  await expect(mainWindow.locator('#counter')).toHaveText('0')
+  await electronApp.evaluate(({ Menu }) => {
+    Menu.getApplicationMenu().items.find(item => item.label === 'Counter').submenu.items[0].click()
+  })
+  await expect(mainWindow.locator('#counter')).toHaveText('1')
+  await mainWindow.screenshot({ path: testInfo.outputPath('main.png'), fullPage: true })
 })
 
-test('可以打开拥有独立 webContents 的模态设置窗口', async () => {
+test('可以打开拥有独立 webContents 的模态设置窗口', async ({}, testInfo) => {
   const mainWindow = await electronApp.firstWindow()
   const settingsWindowPromise = electronApp.waitForEvent('window')
 
@@ -74,8 +86,10 @@ test('可以打开拥有独立 webContents 的模态设置窗口', async () => {
   expect(relationship.parentWindowId).toBe(relationship.mainWindowId)
   expect(relationship.isModal).toBe(true)
 
+  await settingsWindow.screenshot({ path: testInfo.outputPath('settings.png'), fullPage: true })
+
   const settingsClosedPromise = settingsWindow.waitForEvent('close')
-  await settingsWindow.getByRole('button', { name: 'Close' }).click()
+  await settingsWindow.getByRole('button', { name: 'Close' }).click({ noWaitAfter: true })
   await settingsClosedPromise
 
   const remainingWindowCount = await electronApp.evaluate(({ BrowserWindow }) => (
@@ -83,6 +97,51 @@ test('可以打开拥有独立 webContents 的模态设置窗口', async () => {
   ))
 
   expect(remainingWindowCount).toBe(1)
+})
+
+test('构建后的 Settings 保留同页、跨文档导航和拦截策略', async () => {
+  const main = await electronApp.firstWindow()
+  await expect(main.locator('#counter')).toHaveText('0')
+  const opened = electronApp.waitForEvent('window')
+  await electronApp.evaluate(({ Menu }) => {
+    Menu.getApplicationMenu().getMenuItemById('open-settings').click()
+  })
+  const settings = await opened
+  await expect(settings.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await settings.evaluate(() => { window.studyValue = 123 })
+  await settings.getByText('Same-document hash navigation', { exact: true }).click()
+  await expect(settings).toHaveURL(/settings\.html#navigation-section$/)
+  expect(await settings.evaluate(() => window.studyValue)).toBe(123)
+
+  const denied = electronApp.waitForEvent('console', {
+    predicate: message => message.text().includes('[settings] window-open-request')
+  })
+  await settings.getByText('New-window request', { exact: true }).click()
+  await denied
+  expect(electronApp.windows()).toHaveLength(2)
+
+  await settings.getByText('Current-window document navigation', { exact: true }).click()
+  await expect(settings).toHaveTitle('Navigation Target')
+  expect(await settings.evaluate(() => typeof window.studyValue)).toBe('undefined')
+  await settings.getByText('Back to Settings', { exact: true }).click()
+  await expect(settings.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  const blocked = electronApp.waitForEvent('console', {
+    predicate: message => message.text().includes('[settings] navigation-blocked')
+  })
+  await settings.getByText('Blocked local page', { exact: true }).click({ noWaitAfter: true })
+  await blocked
+  // Verify through Electron after cancellation; Playwright lost its frame URL
+  // in this scenario during the migration check.
+  const actual = await electronApp.evaluate(async ({ BrowserWindow }) => {
+    const wc = BrowserWindow.getAllWindows().find(win => win.getTitle() === 'Settings').webContents
+    return {
+      url: wc.getURL(),
+      document: await wc.executeJavaScript('({ url: location.href, title: document.querySelector("h1").textContent })')
+    }
+  })
+  expect(actual.url).toMatch(/settings\.html$/)
+  expect(actual.document.url).toBe(actual.url)
+  expect(actual.document.title).toBe('Settings')
 })
 
 test('两个实验窗口共享 Session Cookie，但保持独立 webContents', async () => {

@@ -4,6 +4,9 @@
   "description": "",
   "main": "main.js",
   "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "pretest": "npm run build",
     "test": "playwright test",
     "start": "electron-forge start",
     "package": "electron-forge package",
@@ -23,10 +26,20 @@
     "@electron-forge/publisher-github": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "@playwright/test": "^1.63.0",
-    "electron": "^44.4.5"
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.4.5",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.3.7"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.4.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0",
     "update-electron-app": "^3.3.0"
   }
 }

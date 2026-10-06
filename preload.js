@@ -1,9 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron/renderer')
 
 function onUpdateCounter (callback) {
-  ipcRenderer.on('update-counter', (_event, value) => {
+  const listener = (_event, value) => {
     callback(value)
-  })
+  }
+  ipcRenderer.on('update-counter', listener)
+  return () => ipcRenderer.removeListener('update-counter', listener)
 }
 
 function sendCounterValue (value) {

@@ -26,6 +26,7 @@
     },
     {
       "name": "Main",
+      "preLaunchTask": "build-renderer",
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
